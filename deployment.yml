@@ -1,0 +1,36 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: pod-hello-deployment
+  namespace: development
+  labels:
+    app: pod-hello
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pod-hello
+  template:
+    metadata:
+      labels:
+        app: pod-hello
+    spec:
+      containers:
+      - name: pod-hello-container
+        image: manojtharindu11/hello-pod:1.0.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
