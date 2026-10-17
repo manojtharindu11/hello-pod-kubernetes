@@ -11,8 +11,12 @@ This directory contains a Kubernetes `Deployment` manifest for running the
 - [`.env.example`](./.env.example) - Shows example local environment values.
 - [`.github/workflows/docker-publish.yml`](./.github/workflows/docker-publish.yml)
   - Builds and publishes the Docker image to Docker Hub.
+- [`busyBox.yml`](./busyBox.yml) - Creates a long-running BusyBox Pod for
+  troubleshooting.
 - [`deployment.yml`](./deployment.yml) - Defines the Kubernetes Deployment and
   the Pods it should run in the `development` namespace.
+- [`service.yml`](./service.yml) - Exposes the Hello Pod Deployment through a
+  Kubernetes Service.
 
 ## Environment variables
 
@@ -21,7 +25,7 @@ locally with example Pod values:
 
 ```powershell
 Copy-Item .env.example .env
-docker run --env-file .env -p 3000:3000 manojtharindu11/hello-pod:1.0.0
+docker run --env-file .env -p 3000:3000 manojtharindu11/hello-pod:latest
 ```
 
 Do not commit `.env`. It is ignored by Git. In Kubernetes, the Deployment does
@@ -48,13 +52,13 @@ can receive traffic from outside the container.
 Build the image from the project directory:
 
 ```powershell
-docker build -t manojtharindu11/hello-pod:1.0.0 .\app
+docker build -t manojtharindu11/hello-pod:latest .\app
 ```
 
 Push it to Docker Hub if the Kubernetes cluster needs to pull it:
 
 ```powershell
-docker push manojtharindu11/hello-pod:1.0.0
+docker push manojtharindu11/hello-pod:latest
 ```
 
 The image tag above matches the image configured in `deployment.yml`.
@@ -66,8 +70,8 @@ The `docker-publish` workflow runs on pushes to `main` only when files under
 `workflow_dispatch`. It builds the Docker image using
 [`app/Dockerfile`](./app/Dockerfile) and publishes it to Docker Hub as:
 
-- `1.0.0` on the default branch
 - `latest` on the default branch
+- `1.0.0` on the default branch
 - A commit-SHA tag for every workflow run
 
 Add these repository secrets in GitHub before running the workflow:
@@ -76,7 +80,7 @@ Add these repository secrets in GitHub before running the workflow:
 - `DOCKERHUB_TOKEN` - A Docker Hub access token, not your account password.
 
 The Deployment currently references
-`manojtharindu11/hello-pod:1.0.0`. Set `DOCKERHUB_USERNAME` to
+`manojtharindu11/hello-pod:latest`. Set `DOCKERHUB_USERNAME` to
 `manojtharindu11` or update the image name in `deployment.yml` to match your
 Docker Hub repository.
 
@@ -191,6 +195,24 @@ This documents that the application listens on port `3000` inside the
 container. A Kubernetes `Service` is still required if the application needs
 to be reached through a stable network endpoint.
 
+### Resource requests and limits
+
+```yaml
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+```
+
+- `requests` are the minimum CPU and memory resources Kubernetes reserves when
+  scheduling each Pod.
+- `limits` are the maximum CPU and memory resources the container can use.
+- `m` means millicpu, so `250m` is one quarter of a CPU core.
+- `Mi` means mebibytes of memory.
+
 ### Environment variables from Pod information
 
 The following variables are populated automatically using Kubernetes' Downward
@@ -244,13 +266,25 @@ This creates both `development` and `production` if they do not already
 exist. Namespace creation is safe to repeat because `kubectl apply` updates
 existing resources instead of creating duplicates.
 
-## Deploy the application
+## Deploy the application and Service
 
-Apply the manifest with:
+Apply the application Deployment and Service:
 
 ```powershell
 kubectl apply -f deployment.yml
+kubectl apply -f service.yml
 ```
+
+The Service selects Pods with the `app: hello-pod` label and forwards Service
+port `80` to the container's port `3000`. Its `LoadBalancer` type requests an
+external address from the cluster. On Minikube, use:
+
+```powershell
+minikube service demo-service -n development
+kubectl get service -n development
+```
+
+The Service manifest names this Service `demo-service`.
 
 ## Verify the Deployment
 
@@ -278,12 +312,47 @@ View the application logs:
 kubectl logs -n development -l app=hello-pod
 ```
 
+## Use the BusyBox troubleshooting Pod
+
+Apply the debugging Deployment:
+
+```powershell
+kubectl apply -f busyBox.yml
+```
+
+Find its current Pod name:
+
+```bash
+kubectl get pods -n default -l app=busybox
+```
+
+The BusyBox container is kept alive by a loop so it can be used for interactive
+troubleshooting. From Git Bash, use `sh` without the leading slash:
+
+```bash
+kubectl exec -it <busybox-pod-name> -n default -- sh
+```
+
+Git Bash can rewrite `/bin/sh` into a Windows path before `kubectl` receives
+it. If the absolute path is required, disable that conversion:
+
+```bash
+MSYS_NO_PATHCONV=1 kubectl exec -it <busybox-pod-name> -n default -- /bin/sh
+```
+
+Remove the troubleshooting Deployment when it is no longer needed:
+
+```powershell
+kubectl delete -f busyBox.yml
+```
+
 ## Remove the Deployment
 
 To remove the Deployment and the Pods it manages:
 
 ```powershell
 kubectl delete -f deployment.yml
+kubectl delete -f service.yml
 ```
 
 To remove both namespaces and all resources inside them:
