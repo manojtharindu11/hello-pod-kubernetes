@@ -24,15 +24,17 @@ Copy-Item .env.example .env
 docker run --env-file .env -p 3000:3000 manojtharindu11/hello-pod:1.0.0
 ```
 
-Do not commit `.env`. It is ignored by Git. The Kubernetes Deployment does not
-read this file; it supplies `POD_NAME`, `POD_NAMESPACE`, and `POD_IP`
-automatically through the Downward API.
+Do not commit `.env`. It is ignored by Git. In Kubernetes, the Deployment does
+not use this local file; it supplies `POD_NAME`, `POD_NAMESPACE`, and `POD_IP`
+automatically through the Downward API. Existing environment variables take
+precedence over values loaded from `.env`.
 
 ## Build and run the Flask application
 
 The [`app/app.py`](./app/app.py) file defines a small Flask application that
-listens on port `3000`. Its `/` endpoint returns JSON containing a greeting and
-the Pod values supplied by Kubernetes:
+listens on port `3000`. It loads values from a local `.env` file using
+`python-dotenv`, and its `/` endpoint returns JSON containing a greeting and
+the Pod values:
 
 - `POD_NAME`
 - `POD_NAMESPACE`
@@ -59,9 +61,10 @@ The image tag above matches the image configured in `deployment.yml`.
 
 ## Publish with GitHub Actions
 
-The `docker-publish` workflow runs on pushes to `main` and can also be started
-manually. It builds the Docker image using [`app/Dockerfile`](./app/Dockerfile)
-and publishes it to Docker Hub as:
+The `docker-publish` workflow runs on pushes to `main` only when files under
+[`app/`](./app/) change. It can also be started manually with
+`workflow_dispatch`. It builds the Docker image using
+[`app/Dockerfile`](./app/Dockerfile) and publishes it to Docker Hub as:
 
 - `1.0.0` on the default branch
 - `latest` on the default branch
