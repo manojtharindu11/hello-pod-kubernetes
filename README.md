@@ -114,13 +114,13 @@ the application is updated.
 
 ```yaml
 metadata:
-  name: pod-hello-deployment
+  name: hello-pod-deployment
   namespace: development
   labels:
-    app: pod-hello
+    app: hello-pod
 ```
 
-- `name` is the name of the Deployment: `pod-hello-deployment`.
+- `name` is the name of the Deployment: `hello-pod-deployment`.
 - `namespace` places the Deployment in the `development` namespace. The
   namespace must already exist unless it is created separately.
 - `labels` are key-value tags used to identify and organize Kubernetes
@@ -141,7 +141,7 @@ spec:
 ```yaml
   selector:
     matchLabels:
-      app: pod-hello
+      app: hello-pod
 ```
 
 The selector tells the Deployment which Pods it manages. It must match the
@@ -153,12 +153,12 @@ labels defined in the Pod template below.
   template:
     metadata:
       labels:
-        app: pod-hello
+        app: hello-pod
 ```
 
 The template describes each Pod created by the Deployment.
 
-- `template.metadata.labels` assigns the `app: pod-hello` label to every
+- `template.metadata.labels` assigns the `app: hello-pod` label to every
   created Pod.
 - This label matches `spec.selector.matchLabels`, allowing the Deployment to
   track its Pods.
@@ -168,13 +168,13 @@ The template describes each Pod created by the Deployment.
 ```yaml
     spec:
       containers:
-      - name: pod-hello-container
+      - name: hello-pod-container
         image: manojtharindu11/hello-pod
 ```
 
 - The nested `spec` describes the contents of each Pod.
 - `containers` lists the containers that run in the Pod.
-- `name` gives the container its name: `pod-hello-container`.
+- `name` gives the container its name: `hello-pod-container`.
 - `image` specifies the Docker image Kubernetes should run.
 
 ### Container port
@@ -254,25 +254,25 @@ kubectl apply -f deployment.yml
 Check the Deployment:
 
 ```powershell
-kubectl get deployment pod-hello-deployment -n development
+kubectl get deployment hello-pod-deployment -n development
 ```
 
 Check the Pods:
 
 ```powershell
-kubectl get pods -n development -l app=pod-hello
+kubectl get pods -n development -l app=hello-pod
 ```
 
 Inspect the Deployment if a Pod does not start:
 
 ```powershell
-kubectl describe deployment pod-hello-deployment -n development
+kubectl describe deployment hello-pod-deployment -n development
 ```
 
 View the application logs:
 
 ```powershell
-kubectl logs -n development -l app=pod-hello
+kubectl logs -n development -l app=hello-pod
 ```
 
 ## Remove the Deployment

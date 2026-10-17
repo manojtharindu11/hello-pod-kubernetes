@@ -2,23 +2,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata: 
-  name: pod-hello-deployment
+  name: hello-pod-deployment
   namespace: development
   labels:
-    app: pod-hello
+    app: hello-pod
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: pod-hello
+      app: hello-pod
   template:
     metadata:
       labels:
-        app: pod-hello
+        app: hello-pod
     spec:
       containers:
-      - name: pod-hello-container
-        image: manojtharindu11/hello-pod:1.0.0
+      - name: hello-pod-container
+        image: manojtharindu11/hello-pod:latest
         ports:
         - containerPort: 3000
         env:
