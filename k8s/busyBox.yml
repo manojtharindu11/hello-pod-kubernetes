@@ -17,15 +17,15 @@ spec:
         app: busybox
     spec:
       containers:
-      - name: busybox-container
-        image: busybox:latest
-        # Keep the container running
-        command: [ "/bin/sh", "-c", "--" ]
-        args: [ "while true; do sleep 30; done;" ]
-        resources:
-          requests:
-            cpu: 30m
-            memory: 64Mi
-          limits:
-            cpu: 100m
-            memory: 128Mi
+        - name: busybox-container
+          image: busybox:latest
+          # Keep the container running
+          command: ["/bin/sh", "-c", "--"]
+          args: ["while true; do sleep 30; done;"]
+          resources:
+            requests:
+              cpu: 30m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

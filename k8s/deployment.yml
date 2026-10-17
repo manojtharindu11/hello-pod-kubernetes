@@ -1,43 +1,62 @@
 ---
+# Use the Deployment API for managing replicated application Pods.
 apiVersion: apps/v1
+# A Deployment keeps the desired number of Pods running.
 kind: Deployment
-metadata: 
+metadata:
+  # Deployment identity and organizational metadata.
   name: hello-pod-deployment
   namespace: development
   labels:
     app: hello-pod
 spec:
+  # Keep three application Pods available.
   replicas: 3
+  # Manage only Pods carrying the hello-pod label.
   selector:
     matchLabels:
       app: hello-pod
+  # Template used to create each managed Pod.
   template:
     metadata:
       labels:
+        # This must match spec.selector.matchLabels.
         app: hello-pod
     spec:
       containers:
-      - name: hello-pod-container
-        image: manojtharindu11/hello-pod:latest
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "250m"
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
-        ports:
-        - containerPort: 3000
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
+        - name: hello-pod-container
+          # Image pulled by the cluster for each Pod.
+          image: manojtharindu11/hello-pod:latest
+          # Scheduling requests and maximum resource usage.
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          # Restrict the container's privileges and filesystem access.
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          # Application listens on port 3000 inside the container.
+          ports:
+            - containerPort: 3000
+          # Get Pod metadata from Kubernetes' Downward API.
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP

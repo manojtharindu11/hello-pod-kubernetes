@@ -252,30 +252,81 @@ API:
 ## Prerequisites
 
 1. Install `kubectl`.
-2. Configure `kubectl` to use a running Kubernetes cluster.
+2. Install Minikube and a supported container runtime such as Docker.
+3. Start Minikube before applying resources.
 
 The Docker image must also be publicly accessible, or the cluster must have
 credentials to pull it.
 
-## Create the namespaces
+## Using Minikube
 
-Apply the namespace manifest before applying the Deployment:
+Start and inspect the local Kubernetes cluster:
 
-```powershell
-kubectl apply -f .\k8s\namespace.yml
+```bash
+minikube start
+kubectl cluster-info
+kubectl get nodes
+minikube update-check
 ```
 
-This creates both `development` and `production` if they do not already
-exist. Namespace creation is safe to repeat because `kubectl apply` updates
-existing resources instead of creating duplicates.
+`minikube start` creates or starts the local cluster. `kubectl cluster-info`
+checks that the Kubernetes control plane is reachable, while `kubectl get
+nodes` shows the worker nodes available for scheduling. `minikube
+update-check` reports whether a newer Minikube version is available.
 
-## Deploy the application and Service
+Inspect cluster-wide resources:
 
-Apply the application Deployment and Service:
+```bash
+kubectl get namespaces
+kubectl get ns
+kubectl get pods -A
+kubectl get services -A
+kubectl api-resources
+```
 
-```powershell
+`get namespaces` and its shorthand `get ns` list namespaces. The `-A` option
+includes every namespace, rather than only the current namespace. `api-resources`
+lists the resource types supported by the cluster.
+
+Stop the cluster when it is not needed, or delete it when you want to remove
+the cluster and its stored state:
+
+```bash
+minikube stop
+minikube delete
+```
+
+## Apply and inspect Kubernetes resources
+
+Create the project namespaces before deploying the application:
+
+```bash
+kubectl apply -f .\k8s\namespace.yml
+kubectl get namespaces
+```
+
+Apply the Hello Pod Deployment and Service:
+
+```bash
 kubectl apply -f .\k8s\deployment.yml
 kubectl apply -f .\k8s\service.yml
+```
+
+Inspect the Deployment and its Pods:
+
+```bash
+kubectl get deployments -n development
+kubectl get pods -n development
+kubectl get pods -n development -o wide
+kubectl describe pod <pod-name> -n development
+```
+
+Use the actual Pod name returned by `kubectl get pods`; Pod names contain
+generated suffixes and change when Pods are recreated. To remove one Pod and
+allow the Deployment to create a replacement:
+
+```bash
+kubectl delete pod <pod-name> -n development
 ```
 
 The Service selects Pods with the `app: hello-pod` label and forwards Service
@@ -343,6 +394,20 @@ it. If the absolute path is required, disable that conversion:
 MSYS_NO_PATHCONV=1 kubectl exec -it <busybox-pod-name> -n default -- /bin/sh
 ```
 
+From inside BusyBox, test the Hello Pod directly using a Pod IP from
+`kubectl get pods -n development -o wide`:
+
+```sh
+wget -O index.html http://<hello-pod-ip>:3000
+cat index.html
+exit
+```
+
+The response contains the greeting and the `POD_NAME`, `POD_NAMESPACE`, and
+`POD_IP` values injected into the application container. Use `wget`, not
+`winget`; `wget` is the BusyBox HTTP client, while `winget` is a Windows
+package manager command.
+
 Remove the troubleshooting Deployment when it is no longer needed:
 
 ```powershell
@@ -366,3 +431,39 @@ kubectl delete -f .\k8s\namespace.yml
 
 Deleting a namespace is destructive: Kubernetes also deletes the resources
 contained in that namespace.
+
+## View application logs
+
+View logs from a specific Pod:
+
+```bash
+kubectl logs <pod-name> -n development
+```
+
+The Flask development server reports the address it is listening on and logs
+each HTTP request. For production workloads, use a production WSGI server
+instead of Flask's built-in development server.
+
+## Kubernetes cluster components
+
+### Control plane
+
+- **Cloud Controller Manager** connects Kubernetes to a cloud provider and
+  manages cloud-specific resources.
+- **etcd** stores the cluster's configuration and current state. The
+  kube-apiserver is the component that communicates directly with it.
+- **kube-apiserver** exposes and validates the Kubernetes API and processes
+  requests from `kubectl` and other cluster components.
+- **kube-controller-manager** runs controllers that continuously reconcile the
+  actual cluster state with the desired state.
+- **kube-scheduler** assigns newly created, unscheduled Pods to suitable
+  worker nodes.
+
+### Worker nodes
+
+- **Container runtime** pulls images and creates, starts, and manages
+  containers.
+- **kubelet** ensures the containers described by each Pod are running and
+  communicates the node status to the API server.
+- **kube-proxy** maintains network rules that allow communication between Pods
+  and Services.
