@@ -5,17 +5,18 @@ This directory contains a Kubernetes `Deployment` manifest for running the
 
 ## Files
 
-- [`namespace.yml`](./namespace.yml) - Creates the `development` and
+- [`k8s/`](./k8s/) - Contains the Kubernetes manifests.
+- [`k8s/namespace.yml`](./k8s/namespace.yml) - Creates the `development` and
   `production` namespaces.
 - [`app/`](./app/) - Contains the Flask application and its Docker files.
 - [`.env.example`](./.env.example) - Shows example local environment values.
 - [`.github/workflows/docker-publish.yml`](./.github/workflows/docker-publish.yml)
   - Builds and publishes the Docker image to Docker Hub.
-- [`busyBox.yml`](./busyBox.yml) - Creates a long-running BusyBox Pod for
+- [`k8s/busyBox.yml`](./k8s/busyBox.yml) - Creates a long-running BusyBox Pod for
   troubleshooting.
-- [`deployment.yml`](./deployment.yml) - Defines the Kubernetes Deployment and
+- [`k8s/deployment.yml`](./k8s/deployment.yml) - Defines the Kubernetes Deployment and
   the Pods it should run in the `development` namespace.
-- [`service.yml`](./service.yml) - Exposes the Hello Pod Deployment through a
+- [`k8s/service.yml`](./k8s/service.yml) - Exposes the Hello Pod Deployment through a
   Kubernetes Service.
 
 ## Environment variables
@@ -61,7 +62,8 @@ Push it to Docker Hub if the Kubernetes cluster needs to pull it:
 docker push manojtharindu11/hello-pod:latest
 ```
 
-The image tag above matches the image configured in `deployment.yml`.
+The image tag above matches the image configured in
+[`k8s/deployment.yml`](./k8s/deployment.yml).
 
 ## Publish with GitHub Actions
 
@@ -81,8 +83,9 @@ Add these repository secrets in GitHub before running the workflow:
 
 The Deployment currently references
 `manojtharindu11/hello-pod:latest`. Set `DOCKERHUB_USERNAME` to
-`manojtharindu11` or update the image name in `deployment.yml` to match your
-Docker Hub repository.
+`manojtharindu11` or update the image name in
+[`k8s/deployment.yml`](./k8s/deployment.yml) to match your Docker Hub
+repository.
 
 ## Namespace manifest explained
 
@@ -259,7 +262,7 @@ credentials to pull it.
 Apply the namespace manifest before applying the Deployment:
 
 ```powershell
-kubectl apply -f namespace.yml
+kubectl apply -f .\k8s\namespace.yml
 ```
 
 This creates both `development` and `production` if they do not already
@@ -271,8 +274,8 @@ existing resources instead of creating duplicates.
 Apply the application Deployment and Service:
 
 ```powershell
-kubectl apply -f deployment.yml
-kubectl apply -f service.yml
+kubectl apply -f .\k8s\deployment.yml
+kubectl apply -f .\k8s\service.yml
 ```
 
 The Service selects Pods with the `app: hello-pod` label and forwards Service
@@ -317,7 +320,7 @@ kubectl logs -n development -l app=hello-pod
 Apply the debugging Deployment:
 
 ```powershell
-kubectl apply -f busyBox.yml
+kubectl apply -f .\k8s\busyBox.yml
 ```
 
 Find its current Pod name:
@@ -343,7 +346,7 @@ MSYS_NO_PATHCONV=1 kubectl exec -it <busybox-pod-name> -n default -- /bin/sh
 Remove the troubleshooting Deployment when it is no longer needed:
 
 ```powershell
-kubectl delete -f busyBox.yml
+kubectl delete -f .\k8s\busyBox.yml
 ```
 
 ## Remove the Deployment
@@ -351,14 +354,14 @@ kubectl delete -f busyBox.yml
 To remove the Deployment and the Pods it manages:
 
 ```powershell
-kubectl delete -f deployment.yml
-kubectl delete -f service.yml
+kubectl delete -f .\k8s\deployment.yml
+kubectl delete -f .\k8s\service.yml
 ```
 
 To remove both namespaces and all resources inside them:
 
 ```powershell
-kubectl delete -f namespace.yml
+kubectl delete -f .\k8s\namespace.yml
 ```
 
 Deleting a namespace is destructive: Kubernetes also deletes the resources
